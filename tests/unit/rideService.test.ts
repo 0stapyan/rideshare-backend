@@ -190,3 +190,51 @@ describe('RideService: cancelRide', () => {
     expect(() => service.cancelRide('missing-ride')).toThrow(/not found/i);
   });
 });
+
+describe('RideService: completeRide', () => {
+  const assignedRide: Ride = {
+    id: 'ride-3',
+    riderId: 'rider-1',
+    driverId: 'drv-1',
+    pickup: KYIV_PICKUP,
+    destination: KYIV_DESTINATION,
+    vehicleClass: 'economy',
+    status: 'assigned',
+    estimatedFare: 100,
+    finalFare: null,
+    distanceKm: 3,
+    createdAt: new Date(),
+    assignedAt: new Date(),
+    completedAt: null,
+    cancelledAt: null
+  };
+
+  it('completes the ride, charges the final fare and returns a receipt', () => {
+    const rideRepo = makeMockRideRepo();
+    rideRepo.findById.mockReturnValue(assignedRide);
+    rideRepo.update.mockImplementation((_id, patch) => ({ ...assignedRide, ...patch } as Ride));
+    const service = new RideService(rideRepo, makeMockDriverRepo([]));
+
+    const result = service.completeRide('ride-3');
+
+    expect(result.ride.status).toBe('completed');
+    expect(result.ride.finalFare).toBeGreaterThan(0);
+    expect(result.receiptId).toContain('ride-3');
+  });
+
+  it('throws RideNotFoundError for an unknown ride', () => {
+    const rideRepo = makeMockRideRepo();
+    rideRepo.findById.mockReturnValue(null);
+    const service = new RideService(rideRepo, makeMockDriverRepo([]));
+
+    expect(() => service.completeRide('missing')).toThrow(/not found/i);
+  });
+
+  it('throws InvalidRideStateError when completing an already-completed ride', () => {
+    const rideRepo = makeMockRideRepo();
+    rideRepo.findById.mockReturnValue({ ...assignedRide, status: 'completed' });
+    const service = new RideService(rideRepo, makeMockDriverRepo([]));
+
+    expect(() => service.completeRide('ride-3')).toThrow(/status/i);
+  });
+});
