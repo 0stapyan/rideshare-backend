@@ -3,8 +3,9 @@ import { Driver, Location, VehicleClass } from '../types';
 /** Simple planar approximation, good enough for a same-city ride-hailing demo. */
 export function distanceKm(a: Location, b: Location): number {
   const KM_PER_DEGREE_LAT = 111.32;
+  const avgLatRad = ((a.lat + b.lat) / 2) * (Math.PI / 180);
   const dLat = (a.lat - b.lat) * KM_PER_DEGREE_LAT;
-  const dLng = (a.lng - b.lng) * KM_PER_DEGREE_LAT * Math.cos((a.lat * Math.PI) / 180);
+  const dLng = (a.lng - b.lng) * KM_PER_DEGREE_LAT * Math.cos(avgLatRad);
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
